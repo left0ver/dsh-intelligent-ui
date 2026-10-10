@@ -1,0 +1,4 @@
+# Layer applied to a profile that lists this bundle.
+- insert:
+    - id: intelligent-ui
+      name: '@left0ver/dsh-intelligent-ui'

@@ -1,0 +1,28 @@
+Drag the sliders to see how the payment changes.
+
+{@body const [amount, setAmount] = DIL.useState(100)}
+{@body const [years, setYears] = DIL.useState(30)}
+{@body const [rate, setRate] = DIL.useState(3.5)}
+{@body const [view, setView] = DIL.useState("summary")}
+{@body const r = rate / 100 / 12}
+{@body const n = years * 12}
+{@body const monthly = amount * 10000 * r * (1 + r) ** n / ((1 + r) ** n - 1)}
+{@body const yuan = value => "¥" + Math.round(value).toLocaleString()}
+{@body const milestones = [5, 10, 20, 30].filter(year => year <= years)}
+
+<card title="Loan">
+  <slider label="Amount (10k)" value={amount} onChange={setAmount} min={10} max={500}/>
+  <slider label="Term (years)" value={years} onChange={setYears} min={5} max={30}/>
+  <slider label="Annual rate (%)" value={rate} onChange={setRate} min={2} max={6} step={0.05}/>
+</card>
+<tabs value={view} onChange={setView} options={[{label: "Summary", value: "summary"}, {label: "Schedule", value: "schedule"}]}/>
+{#if view === "summary"}
+  <box direction="row" gap={4}>
+    <stat label="Monthly payment" value={yuan(monthly)}/>
+    <stat label="Total interest" value={yuan(monthly * n - amount * 10000)} hint={years + " years"}/>
+  </box>
+{:else}
+  {#each milestones as year}
+    <text>After {year} years you have paid {yuan(monthly * year * 12)}.</text>
+  {/each}
+{/if}

@@ -1,0 +1,3 @@
+# Makes this checkout its own pnpm root, apart from any workspace above it.
+allowBuilds:
+  esbuild: true
