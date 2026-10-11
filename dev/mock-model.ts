@@ -1,5 +1,5 @@
 /**
- * Dev-only model. Whatever the prompt, it answers with one `render_ui` call
+ * A mock model for `pnpm dev:mock`. Whatever the prompt, it answers with one `render_ui` call
  * whose source is the reference example, written out at reading speed, so the streaming
  * display can be exercised without an API key.
  *
@@ -18,7 +18,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { LlmAdapter, type GenerateOptions, type StreamChunk, type ToolCallId } from '@deepseek-ai/dsh-llm'
 import { TOOL } from '../src/shared.ts'
 
-export const name = 'scripted-llm'
+export const name = 'mock-model'
 export const inject = ['llm']
 
 const SAMPLE = process.env.DIL_SAMPLE ?? new URL('../src/dil/example.dil', import.meta.url).pathname
@@ -35,7 +35,7 @@ function sourceFor(messages: GenerateOptions['messages']): string {
   return own !== undefined && (insist || messages.at(-1)?.role !== 'tool') ? own : readFileSync(SAMPLE, 'utf8')
 }
 
-class ScriptedModel extends LlmAdapter {
+class MockModel extends LlmAdapter {
   async *stream({ tools, messages }: GenerateOptions): AsyncIterable<StreamChunk> {
     // A request that cannot call the tool (a session title) gets a plain reply.
     if (!tools?.some(tool => tool.name === TOOL)) {
@@ -61,5 +61,5 @@ class ScriptedModel extends LlmAdapter {
 }
 
 export function apply(ctx: Context): void {
-  ctx.llm.registerAdapter(['scripted'], new ScriptedModel())
+  ctx.llm.registerAdapter(['mock'], new MockModel())
 }

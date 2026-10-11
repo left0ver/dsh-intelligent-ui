@@ -1,9 +1,9 @@
 /**
- * Asks the real model for interfaces and reports how many of them work.
+ * `pnpm eval`: asks the real model for interfaces and reports how many of them work.
  *
  * Every prompt goes through `dsh headless` with this plugin loaded, so it uses
  * the model and the account dsh is configured with, and leaves one session per
- * prompt behind. The sources the model wrote are kept in `dev/eval-out/`.
+ * prompt behind. The sources the model wrote are kept in `dev/eval-results/`.
  */
 import { execFile } from 'node:child_process'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
@@ -34,7 +34,7 @@ const PROMPTS = [
 ]
 /** Prompts in flight at once. */
 const PARALLEL = 3
-const OUT = 'dev/eval-out'
+const OUT = 'dev/eval-results'
 
 /** The run events of `dsh headless --json` this script reads. */
 interface Event {

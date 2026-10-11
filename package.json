@@ -41,8 +41,8 @@
     "typecheck": "tsc",
     "test": "node --test",
     "dev": "node build.mjs && dsh web --patch dev.patch.yml",
-    "dev:scripted": "node build.mjs && dsh web --patch dev.patch.yml --patch dev.scripted.patch.yml",
-    "eval": "node build.mjs && node dev/eval.ts",
+    "dev:mock": "node build.mjs && dsh web --patch dev.patch.yml --patch dev/use-mock-model.patch.yml",
+    "eval": "node build.mjs && node dev/real-model-eval.ts",
     "prepack": "npm run typecheck && npm test && npm run build"
   },
   "peerDependencies": {
