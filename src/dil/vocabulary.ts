@@ -1,4 +1,7 @@
-/** The elements a program may use, as the model reads them. The Web client renders every one. */
+/**
+ * 程序可以使用的全部元素。右边的说明会原样写进给模型的工具描述里，
+ * 所以保持英文；Web 端为其中每个元素都提供了渲染。
+ */
 export const VOCABULARY = {
   box: 'direction="column|row" gap={0-6} align="start|center|end" justify="start|center|end|between" wrap — layout',
   card: 'title="…" — bordered group',

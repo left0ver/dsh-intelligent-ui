@@ -1,14 +1,15 @@
 /**
- * What is wrong with a finished source, in words its author can act on.
- * Code is only parsed here, never run: running it is the sandbox's job.
+ * 检查一份写完的源码有什么问题，结果是模型看了就能照着改的文字。
+ * 这里只解析代码，绝不执行：执行是沙箱的事。
  */
 import { parse, type Node } from './parse.ts'
 import { VOCABULARY } from './vocabulary.ts'
 
+/** 返回源码里的所有问题，没有问题时是空数组。 */
 export function check(source: string): string[] {
   const { statements, nodes, problems } = parse(source)
 
-  /** `code` must parse as a function body; `written` is how the source put it. */
+  /** `code` 必须能作为函数体通过解析；`written` 是它在源码里的写法，用于报告。 */
   const syntax = (written: string, code: string) => {
     try {
       new Function(code)
@@ -16,8 +17,10 @@ export function check(source: string): string[] {
       problems.push(`${written}: ${(error as Error).message}`)
     }
   }
+  /** 检查一个表达式的语法。 */
   const expression = (code: string) => syntax(`{${code}}`, `return (${code}\n)`)
 
+  /** 逐个检查节点：其中代码的语法，以及元素是否在允许的范围内。 */
   function visit(nodes: Node[]): void {
     for (const node of nodes) {
       if (node.kind === 'code') expression(node.code)

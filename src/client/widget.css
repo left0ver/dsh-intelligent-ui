@@ -1,4 +1,6 @@
-/* Colours and radii come from the dsh theme, so interfaces follow light and dark mode. */
+/* 颜色和圆角取自 dsh 的主题变量，所以界面会跟随浅色和深色模式。 */
+
+/* 整个界面，以及界面还没画出来时的占位文字 */
 .iui {
   display: flex;
   flex-direction: column;
@@ -9,8 +11,9 @@
 }
 .iui-pending { margin: 0; color: var(--dsw-alias-label-tertiary); }
 
+/* 布局：box 和 card */
 .iui-box { display: flex; min-width: 0; }
-/* In a row, groups and fields share the width; buttons, checkboxes and text keep their own. */
+/* 横向排列时，分组、输入栏、图表和表格平分宽度；按钮、勾选框和文字保持自身宽度。 */
 .iui-box[data-direction="row"] > :is(.iui-box, .iui-card, .iui-field, .iui-chart, .iui-table) { flex: 1 1 200px; min-width: 0; }
 .iui-card {
   display: flex;
@@ -22,22 +25,26 @@
 }
 .iui-card > header { font-weight: 600; }
 
+/* 文字：title 和 text */
 .iui-title { font-size: 16px; font-weight: 600; }
 .iui-title[data-size="sm"] { font-size: 14px; }
 .iui-title[data-size="lg"] { font-size: 20px; }
 .iui-title[data-size="xl"] { font-size: 28px; }
 .iui-text { margin: 0; line-height: 1.6; }
+/* 嵌套在 text 里的 text 不另起一行。 */
 .iui-text .iui-text { display: inline; }
 .iui-text[data-tone="muted"] { color: var(--dsw-alias-label-tertiary); }
 .iui-text[data-tone="good"] { color: var(--dsw-alias-state-success-primary); }
 .iui-text[data-tone="bad"] { color: var(--dsw-alias-state-error-primary); }
 
+/* 关键数字：stat */
 .iui-stat { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 120px; }
 .iui-stat > span { color: var(--dsw-alias-label-secondary); font-size: 13px; }
 .iui-stat > strong { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .iui-stat[data-tone="good"] > strong { color: var(--dsw-alias-state-success-primary); }
 .iui-stat[data-tone="bad"] > strong { color: var(--dsw-alias-state-error-primary); }
 
+/* 输入控件：slider、input、select、checkbox 和 button */
 .iui-field { display: flex; flex-direction: column; gap: 6px; }
 .iui-field > span { display: flex; justify-content: space-between; color: var(--dsw-alias-label-secondary); }
 .iui-field output { font-variant-numeric: tabular-nums; }
@@ -59,8 +66,10 @@
   color: var(--dsw-alias-label-primary-foreground);
 }
 
+/* 页签：tabs */
 .iui-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dsw-alias-border-l2); }
 .iui-tabs > button {
+  /* 下移 1px，让选中页签的下划线盖住页签栏的底边。 */
   margin-bottom: -1px;
   padding: 6px 12px;
   border: 0;
@@ -75,6 +84,7 @@
   color: var(--dsw-alias-label-primary);
 }
 
+/* 图表：chart。`--series` 是一组数据的颜色，第一组用主题色，其余各组在下面指定。 */
 .iui-chart {
   margin: 0;
   --series: var(--dsw-alias-state-business-primary);
@@ -90,6 +100,7 @@
 .iui-chart polyline { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; }
 .iui-chart rect,
 .iui-chart circle { fill: var(--series); }
+/* 图例，每一项前面有一个色块 */
 .iui-chart figcaption {
   display: flex;
   flex-wrap: wrap;
@@ -108,6 +119,7 @@
   background: var(--series);
 }
 
+/* 表格：table */
 .iui-table { width: 100%; border-collapse: collapse; }
 .iui-table th,
 .iui-table td { padding: 8px 12px; border-bottom: 1px solid var(--dsw-alias-border-l2); text-align: left; }

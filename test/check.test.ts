@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { check } from '../src/dil/check.ts'
 
+/** 参考示例的源码。 */
 const example = readFileSync(new URL('../src/dil/example.dil', import.meta.url), 'utf8')
 
 test('the example has no problems', () => {

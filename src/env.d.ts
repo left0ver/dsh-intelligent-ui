@@ -1,4 +1,4 @@
-/** Inputs the build turns into strings. */
+/** 构建时以字符串形式内联进来的文件。 */
 
 declare module '*.css' {
   const text: string
@@ -10,5 +10,5 @@ declare module '*.dil' {
   export default text
 }
 
-/** The bundled sandbox worker script. */
+/** 打包好的沙箱 Worker 脚本，由 `build.mjs` 注入。 */
 declare const __WORKER__: string

@@ -1,3 +1,5 @@
-# Makes this checkout its own pnpm root, apart from any workspace above it.
+# 让这个目录成为独立的 pnpm 根目录，不受上层目录里 workspace 的影响。
+
+# 允许 esbuild 运行它的安装脚本。
 allowBuilds:
   esbuild: true

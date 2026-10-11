@@ -5,14 +5,16 @@ import { compile } from '../src/dil/compile.ts'
 import type { Command, Item, Report } from '../src/dil/protocol.ts'
 import { createRuntime } from '../src/dil/runtime.ts'
 
+/** 参考示例的源码。 */
 const example = readFileSync(new URL('../src/dil/example.dil', import.meta.url), 'utf8')
 
-/** A runtime whose `send` resolves to the tree as painted after the command. */
+/** 创建一个运行时。返回的函数发出一条指令，并得到指令执行后渲染出的界面树。 */
 function runtime() {
   const reports: Report[] = []
   const receive = createRuntime(report => reports.push(report))
   return async (command: Command): Promise<Item[]> => {
     receive(command)
+    // 重绘排在微任务里，等它执行完。
     await null
     const last = reports.at(-1)!
     assert.ok('tree' in last, JSON.stringify(last))
@@ -20,7 +22,7 @@ function runtime() {
   }
 }
 
-/** Path of the first tag matching `t` and, when given, a `label` prop. */
+/** 找出第一个标签名为 `t` 的标签的路径；给了 `label` 时，它的 `label` 属性也要相符。 */
 function locate(items: Item[], t: string, label?: string, path: number[] = []): number[] | undefined {
   for (const [index, item] of items.entries()) {
     if (typeof item === 'string') continue
@@ -30,6 +32,7 @@ function locate(items: Item[], t: string, label?: string, path: number[] = []): 
   }
 }
 
+/** 构造一条指令：触发 `path` 处那个标签的 `onChange`。 */
 const change = (path: number[], value: unknown): Command => ({ event: { path, name: 'onChange', args: [value] } })
 
 test('the example paints its computed figures', async () => {
@@ -68,6 +71,7 @@ test('state survives the source growing', async () => {
 test('every command is answered, whether or not it changes anything', async () => {
   const reports: Report[] = []
   const receive = createRuntime(report => reports.push(report))
+  /** 发出一条指令，返回收到的回复条数。 */
   const answers = async (command: Command) => {
     receive(command)
     await null

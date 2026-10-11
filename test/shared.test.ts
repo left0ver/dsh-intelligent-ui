@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { readArgs } from '../src/shared.ts'
 
+/** 一份完整的参数 JSON，包含需要转义的引号、换行和非 ASCII 字符。 */
 const full = JSON.stringify({ title: 'Loan', source: 'line "one"\nline ¥2' })
 
 test('reads complete arguments', () => {

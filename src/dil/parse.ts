@@ -1,12 +1,12 @@
 /**
- * DIL syntax: Markdown prose, `<tag>` elements, and `{…}` code.
+ * DIL 的语法解析：Markdown 正文、`<tag>` 元素和 `{…}` 代码。
  *
- * The source is usually still being written. The parser reads as far as the
- * input is complete, drops an unfinished tail, and leaves open elements and
- * blocks open-ended, so every prefix of a document parses. What it let pass on
- * the way is listed as `problems`, which matter once the source is finished.
+ * 源码通常还在流式输出中。解析器只读到完整的部分，丢掉没写完的尾巴，
+ * 没闭合的元素和块按“一直到末尾”处理，所以源码的任何前缀都能解析。
+ * 途中放过的问题记在 `problems` 里，等源码写完后才有意义。
  */
 
+/** 语法树节点：文本、`{表达式}`、元素、`{#if}` 块、`{#each}` 块。 */
 export type Node =
   | { kind: 'text'; text: string }
   | { kind: 'code'; code: string }
@@ -14,52 +14,63 @@ export type Node =
   | { kind: 'if'; test: string; then: Node[]; otherwise: Node[] }
   | { kind: 'each'; list: string; item: string; children: Node[] }
 
-/** One attribute: literal text, or code evaluated on every render. */
+/** 一个属性：字面文本，或每次渲染时求值的代码。 */
 export type Prop = { name: string } & ({ text: string } | { code: string })
 
 export interface Program {
-  /** `{@body …}` statements, in source order. */
+  /** 各个 `{@body …}` 里的语句，按书写顺序。 */
   statements: string[]
+  /** 顶层节点。 */
   nodes: Node[]
-  /** Everything the parser let pass: unfinished pieces, and closers that close the wrong thing. */
+  /** 解析时放过的所有问题：没写完的片段，以及对不上的闭合标记。 */
   problems: string[]
 }
 
+/** 开始标签的 `<tag`。 */
 const OPEN = /<([A-Za-z][\w.-]*)/y
+/** 结束标签 `</tag>`。 */
 const CLOSE = /<\/([\w.-]*)\s*>/y
+/** 一个属性：`name`、`name="文本"`、`name='文本'`，或后面紧跟 `{代码}` 的 `name=`。 */
 const ATTRIBUTE = /\s+([\w-]+)(?:=(?:"([^"]*)"|'([^']*)'|(?={)))?/y
+/** 开始标签的结尾：`>`，或自闭合的 `/>`。 */
 const TAG_END = /\s*(\/?)>/y
-/** Anything up to code or a tag; a `<` that starts no tag is text. */
+/** 一段文本：到代码或标签为止；不是标签开头的 `<` 也算文本。 */
 const TEXT = /(?:[^<{]|<(?![A-Za-z/]|$))+/y
+/** `{…}` 里的指令及其后面的内容。 */
 const DIRECTIVE = /^\s*(@body|#if|#each|:else|\/if|\/each)\b\s*([\s\S]*)$/
+/** `{#each 列表 as 变量}` 里的列表和变量。 */
 const EACH = /^([\s\S]+?)\s+as\s+([\s\S]+)$/
+/** 带引号的属性值里嵌入的 `{表达式}`。 */
 const EMBEDDED = /\{([^{}]+)\}/g
 
-/** A quoted attribute that embeds `{expression}`, as Svelte allows, read as a template string. */
+/** 带引号的属性值里嵌了 `{表达式}`（Svelte 的写法）时，把它转成模板字符串。 */
 const template = (text: string) => `\`${text.replace(/[\`\\]|\$(?={)/g, '\\$&').replace(EMBEDDED, '${$1}')}\``
 
+/** 解析源码。不会抛错：遇到的问题都记在返回值的 `problems` 里。 */
 export function parse(source: string): Program {
   const statements: string[] = []
   const problems: string[] = []
+  /** 当前读到的位置。 */
   let at = 0
-  /** What closed the innermost list, as written; nothing at the end of input. */
+  /** 刚读完的那个列表是被什么结束的（按原文）；读到输入末尾时为空。 */
   let ended = ''
 
-  /** A piece of the source as problems name it. */
+  /** 问题描述里指代源码中某一段的写法：原文加行号。 */
   const mark = (piece: string, index: number) => `${piece} (line ${source.slice(0, index).split('\n').length})`
+  /** 在当前位置匹配 `pattern`（须带 `y` 标志），匹配上就前进到它后面。 */
   const take = (pattern: RegExp) => {
     pattern.lastIndex = at
     const match = pattern.exec(source)
     if (match) at = pattern.lastIndex
     return match
   }
-  /** Abandon an unfinished tail. */
+  /** 放弃没写完的尾巴，并记下是哪一段没写完。 */
   const giveUp = (piece: string): undefined => {
     problems.push(`${piece} is unfinished`)
     at = source.length
   }
 
-  /** The inside of the `{…}` at the cursor. */
+  /** 读出当前位置那对 `{…}` 里面的内容。 */
   function braces(): string | undefined {
     const end = closing(source, at)
     if (end < 0) return giveUp(mark('{', at))
@@ -68,13 +79,14 @@ export function parse(source: string): Program {
     return code
   }
 
-  /** The element whose `<tag` was just read; `opener` names it in problems. */
+  /** 解析一个元素，此时它的 `<tag` 已经读过；`opener` 是问题描述里对它的称呼。 */
   function element(tag: string, opener: string): Node | undefined {
     const props: Prop[] = []
     for (let match; (match = take(ATTRIBUTE));) {
       const [, name, double, single] = match
       const text = double ?? single
       if (text !== undefined) props.push(text.search(EMBEDDED) < 0 ? { name, text } : { name, code: template(text) })
+      // 只写了名字的属性等于 `true`。
       else if (source[at] !== '{') props.push({ name, code: 'true' })
       else {
         const code = braces()
@@ -87,10 +99,15 @@ export function parse(source: string): Program {
     return { kind: 'element', tag, props, children: end[1] ? [] : list(opener, `</${tag}>`) }
   }
 
-  /** The nodes up to whatever closes `opener`; one of `closers` should. Any closer ends the list. */
+  /**
+   * 读出 `opener` 里面的所有节点，直到遇到闭合标记。它应该由 `closers` 之一闭合，
+   * 但任何闭合标记都会结束这个列表，对不上的记为问题。
+   */
   function list(opener: string, ...closers: string[]): Node[] {
     const nodes: Node[] = []
+    /** 结束这个列表的闭合标记。 */
     let closer = ''
+    /** 当前这一项的起始位置，用来报告行号。 */
     let from = at
     while (!closer && at < source.length) {
       from = at
@@ -106,6 +123,7 @@ export function parse(source: string): Program {
         if (directive === '@body') statements.push(rest)
         else if (directive === '#if') {
           const block = mark('{#if}', from)
+          // 第一段如果是被 `{:else}` 结束的，后面还有第二段。
           nodes.push({ kind: 'if', test: rest, then: list(block, '{:else}', '{/if}'), otherwise: ended === '{:else}' ? list(block, '{/if}') : [] })
         } else if (directive === '#each') {
           const [, items = rest, item = 'item'] = EACH.exec(rest) ?? []
@@ -125,11 +143,12 @@ export function parse(source: string): Program {
   }
 
   const nodes: Node[] = []
+  // 顶层没有需要闭合的东西：多余的闭合标记记为问题，然后接着往下读。
   while (at < source.length) nodes.push(...list('', ''))
   return { statements, nodes, problems }
 }
 
-/** Index of the brace closing the one at `open`, or -1 while the code is unfinished. Braces in strings do not count. */
+/** 与 `open` 处的 `{` 配对的 `}` 的位置；代码还没写完时返回 -1。字符串里的花括号不算。 */
 function closing(source: string, open: number): number {
   const token = /[{}]|"(?:[^"\\]|\\[^])*"?|'(?:[^'\\]|\\[^])*'?|`(?:[^`\\]|\\[^])*`?/g
   token.lastIndex = open

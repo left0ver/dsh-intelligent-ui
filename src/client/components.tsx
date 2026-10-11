@@ -1,7 +1,6 @@
 /**
- * This page's own rendering of each element. Props are whatever model-written
- * code produced, so a view coerces each one it reads and passes none through
- * to the DOM as they are.
+ * 每个元素在页面上的渲染。属性是模型写的代码算出来的，什么值都有可能，
+ * 所以每个组件读属性时都先转成需要的类型，不把任何属性原样传给 DOM。
  */
 import { useState, type ReactNode } from 'react'
 import type { VOCABULARY } from '../dil/vocabulary.ts'
@@ -9,27 +8,33 @@ import { Chart } from './chart.tsx'
 
 type Props = Record<string, unknown>
 interface ViewProps {
+  /** 程序给这个元素算出的属性。 */
   p: Props
-  /** Call the handler the program put on this element. */
+  /** 调用程序写在这个元素上的事件处理函数。 */
   on: (name: string, ...args: unknown[]) => void
   children?: ReactNode
 }
+/** 一个元素的渲染组件。 */
 type View = (props: ViewProps) => ReactNode
 
+/** 转成字符串；既不是字符串也不是数字时为空串。 */
 const str = (value: unknown) => typeof value === 'string' || typeof value === 'number' ? String(value) : ''
+/** 转成数字；没有值或不是数字时用 `fallback`。 */
 const num = (value: unknown, fallback: number) => value == null || Number.isNaN(Number(value)) ? fallback : Number(value)
+/** 转成对象数组，用作表格和图表的行。 */
 const rows = (value: unknown) => (Array.isArray(value) ? value : []).map((row: unknown) => typeof row === 'object' && row !== null ? row as Props : {})
 
-/** Options and columns are written as `{label, value}` or as bare values. */
+/** 转成选项列表。选项和表格的列可以写成 `{label, value}`，也可以直接写值。 */
 const options = (value: unknown) => (Array.isArray(value) ? value : []).map((option: unknown) => {
   const { label, value } = typeof option === 'object' && option !== null ? option as Props : { value: option } as Props
   return { label: str(label ?? value), value }
 })
 
-/** A control shows the user's input at once; the program's value arrives a moment later and wins. */
+/** 让控件立刻显示用户的输入；程序算出的值稍后才到，到了以程序的为准。 */
 function useEcho<T>(value: T, change: (next: T) => void): [T, (next: T) => void] {
   const [shown, setShown] = useState(value)
   const [last, setLast] = useState(value)
+  // 程序给的值变了：改为显示它。
   if (value !== last) {
     setLast(value)
     setShown(value)
@@ -40,6 +45,7 @@ function useEcho<T>(value: T, change: (next: T) => void): [T, (next: T) => void]
   }]
 }
 
+/** 带标签的一栏；`note` 显示在标签右侧，滑块用它显示当前值。 */
 function Field({ label, note, children }: { label: unknown; note?: string; children: ReactNode }) {
   return (
     <label className="iui-field">
@@ -73,6 +79,7 @@ function Input({ p, on }: ViewProps) {
 function Select({ p, on }: ViewProps) {
   const choices = options(p.options)
   const [value, change] = useEcho(p.value, next => on('onChange', next))
+  // 选项的值可以是任意类型，所以 `<option>` 用下标作值。
   return (
     <Field label={p.label}>
       <select className="iui-input" value={choices.findIndex(choice => choice.value === value)}
@@ -93,12 +100,15 @@ function Checkbox({ p, on }: ViewProps) {
   )
 }
 
+/** `align` / `justify` 的取值对应的 flex 写法。 */
 const FLEX: Record<string, string> = { start: 'flex-start', center: 'center', end: 'flex-end', between: 'space-between' }
 
+/** 元素名到渲染组件的对应，`VOCABULARY` 里的每个元素都有一项。 */
 export const views: Record<keyof typeof VOCABULARY, View> = {
   box: ({ p, children }) => (
     <div className="iui-box" data-direction={p.direction === 'row' ? 'row' : 'column'} style={{
       flexDirection: p.direction === 'row' ? 'row' : 'column',
+      // `gap` 以 4px 为一档。
       gap: num(p.gap, 3) * 4,
       alignItems: FLEX[str(p.align)],
       justifyContent: FLEX[str(p.justify)],
@@ -150,7 +160,7 @@ export const views: Record<keyof typeof VOCABULARY, View> = {
   },
   chart: ({ p }) => {
     const points = rows(p.rows)
-    // What is not a finite number is drawn as zero: the plot's geometry divides by the range of these.
+    // 不是有限数值的一律按 0 画：算坐标时要除以这些数值的范围。
     const finite = (value: unknown) => Number.isFinite(num(value, 0)) ? num(value, 0) : 0
     return (
       <Chart bars={p.type === 'bar'} labels={points.map(row => str(row[str(p.x)]))}

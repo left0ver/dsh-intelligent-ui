@@ -1,5 +1,6 @@
 name: Publish to npm
 
+# 推送 v* 标签时发布到 npm；也可以手动运行，只做检查。
 on:
   workflow_dispatch:
   push:
@@ -38,8 +39,8 @@ jobs:
       - name: Ensure supported npm version
         run: npm install --global npm@11
 
-      # Both steps below run `prepack`: typecheck, tests, and the build.
-      # A manual run only checks what would be published.
+      # 下面两种情况都会触发 `prepack`：类型检查、测试和构建。
+      # 手动运行时只检查将要发布的内容，不会真的发布。
       - name: Check the package
         if: github.event_name != 'push'
         run: npm pack --dry-run

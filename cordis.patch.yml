@@ -1,4 +1,4 @@
-# Layer applied to a profile that lists this bundle.
+# 安装本插件后，dsh 把这份配置应用到对应的 profile 上，从而加载插件。
 - insert:
     - id: intelligent-ui
       name: '@left0ver/dsh-intelligent-ui'
