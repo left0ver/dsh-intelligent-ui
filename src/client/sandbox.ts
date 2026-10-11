@@ -22,27 +22,39 @@ const items = (value: unknown): Item[] => (Array.isArray(value) ? value : []).fl
   return [{ t: item.t, p: typeof item.p === 'object' && item.p !== null ? item.p : {}, c: items(item.c) }]
 })
 
+/** How long a program may leave a command unanswered before it counts as hung. */
+const TIMEOUT_MS = 2000
+
+/** What a sandbox has to show: the tree its program painted last, or why there is none. */
+export interface Shown {
+  tree: Item[]
+  error?: string
+}
+
 export class Sandbox {
-  /** What the program painted last. */
-  tree: Item[] = []
-  private frame = document.createElement('iframe')
+  shown: Shown = { tree: [] }
+  private frame?: HTMLIFrameElement
   private watchers = new Set<() => void>()
   private program = ''
   private ready = false
+  /** Commands the program has not answered yet, and the clock running since the oldest of them could have been. */
+  private owed = 0
+  private clock?: ReturnType<typeof setTimeout>
 
   constructor() {
-    this.frame.sandbox.add('allow-scripts')
-    this.frame.srcdoc = RUNNER
-    this.frame.hidden = true
     addEventListener('message', this.receive)
-    document.body.append(this.frame)
   }
 
-  /** Run a program in place of the current one; state carries over by name. */
+  /** Run a program in place of the current one; state carries over by name. A hung program is replaced, state and all. */
   run(program: string): void {
     if (program === this.program) return
     this.program = program
-    if (this.ready) this.send({ program })
+    if (this.frame) return this.send({ program })
+    this.frame = document.createElement('iframe')
+    this.frame.sandbox.add('allow-scripts')
+    this.frame.srcdoc = RUNNER
+    this.frame.hidden = true
+    document.body.append(this.frame)
   }
 
   /** Call the handler `name` of the tag at `path`. */
@@ -59,22 +71,50 @@ export class Sandbox {
 
   dispose(): void {
     removeEventListener('message', this.receive)
-    this.frame.remove()
+    this.stop()
+  }
+
+  /** End the program; the frame takes its Worker with it. */
+  private stop(): void {
+    this.frame?.remove()
+    this.frame = undefined
+    this.ready = false
+    this.settle(this.owed)
   }
 
   private send(command: Command): void {
-    this.frame.contentWindow?.postMessage(command, '*')
+    if (!this.ready) return
+    this.frame!.contentWindow!.postMessage(command, '*')
+    if (!this.owed++) this.settle(0)
+  }
+
+  /** Take `answered` commands off what is owed, and time the program anew on the rest. */
+  private settle(answered: number): void {
+    this.owed = Math.max(0, this.owed - answered)
+    clearTimeout(this.clock)
+    if (this.owed) {
+      this.clock = setTimeout(() => {
+        this.stop()
+        this.show({ tree: [], error: 'the program stopped responding' })
+      }, TIMEOUT_MS)
+    }
+  }
+
+  private show(shown: Shown): void {
+    if (shown.error) console.warn('[intelligent-ui]', shown.error)
+    this.shown = shown
+    for (const watcher of this.watchers) watcher()
   }
 
   private receive = ({ source, data }: MessageEvent<Report | null>): void => {
-    if (source !== this.frame.contentWindow || typeof data !== 'object' || data === null) return
+    if (!this.frame || source !== this.frame.contentWindow || typeof data !== 'object' || data === null) return
     if ('ready' in data) {
       this.ready = true
-      this.send({ program: this.program })
-    } else if ('tree' in data) {
-      this.tree = items(JSON.parse(data.tree))
-      for (const watcher of this.watchers) watcher()
-    } else console.warn('[intelligent-ui]', data.error)
+      return this.send({ program: this.program })
+    }
+    // A program may also paint on its own, so it can answer more often than it was asked.
+    this.settle(1)
+    this.show('tree' in data ? { tree: items(JSON.parse(data.tree)) } : { tree: [], error: data.error })
   }
 }
 

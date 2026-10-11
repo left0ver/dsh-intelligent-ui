@@ -28,6 +28,7 @@
     "client": {
       "platform": "web",
       "inject": [
+        "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-chat",
         "@deepseek-ai/dsh-client-ui-conversation",
         "@deepseek-ai/dsh-client-ui-renderer",
@@ -41,6 +42,7 @@
     "test": "node --test",
     "dev": "node build.mjs && dsh web --patch dev.patch.yml",
     "dev:scripted": "node build.mjs && dsh web --patch dev.patch.yml --patch dev.scripted.patch.yml",
+    "eval": "node build.mjs && node dev/eval.ts",
     "prepack": "npm run typecheck && npm test && npm run build"
   },
   "peerDependencies": {
@@ -49,6 +51,7 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "~4.0.4",
+    "@deepseek-ai/dsh-client-locale": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-chat": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-conversation": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.2",

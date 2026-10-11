@@ -1,5 +1,9 @@
-/** Runs compiled programs: keeps their state, calls their handlers, reports what they paint. */
-import type { Command, Item, Report, Tag } from './protocol.ts'
+/**
+ * Runs compiled programs: keeps their state, calls their handlers, reports
+ * what they paint. Every command is answered with one report, so whoever sent
+ * it can tell a program that is done from one that hangs.
+ */
+import { PARAMETERS, type Command, type Item, type Report, type Tag } from './protocol.ts'
 
 export function createRuntime(report: (report: Report) => void): (command: Command) => void {
   const state = new Map<string, unknown>()
@@ -42,7 +46,7 @@ export function createRuntime(report: (report: Report) => void): (command: Comma
   return (command) => {
     if ('program' in command) {
       try {
-        render = new Function('DIL', 'h', '$', command.program).bind(undefined, DIL, h, $)
+        render = new Function(...PARAMETERS, command.program).bind(undefined, DIL, h, $)
       } catch (error) {
         return report({ error: String(error) })
       }
@@ -51,7 +55,8 @@ export function createRuntime(report: (report: Report) => void): (command: Comma
       const { path, name, args } = command.event
       const target = path.reduce<Item | undefined>((tag, index) => typeof tag === 'object' ? tag.c[index] : undefined, { t: '', p: {}, c: tree })
       const handler = typeof target === 'object' ? target.p[name] : undefined
-      if (typeof handler === 'function') handler(...args)
+      if (typeof handler === 'function') $(() => handler(...args))
+      repaint()
     }
   }
 }

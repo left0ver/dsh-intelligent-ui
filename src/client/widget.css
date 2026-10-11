@@ -10,6 +10,8 @@
 .iui-pending { margin: 0; color: var(--dsw-alias-label-tertiary); }
 
 .iui-box { display: flex; min-width: 0; }
+/* In a row, groups and fields share the width; buttons, checkboxes and text keep their own. */
+.iui-box[data-direction="row"] > :is(.iui-box, .iui-card, .iui-field, .iui-chart, .iui-table) { flex: 1 1 200px; min-width: 0; }
 .iui-card {
   display: flex;
   flex-direction: column;
@@ -25,6 +27,7 @@
 .iui-title[data-size="lg"] { font-size: 20px; }
 .iui-title[data-size="xl"] { font-size: 28px; }
 .iui-text { margin: 0; line-height: 1.6; }
+.iui-text .iui-text { display: inline; }
 .iui-text[data-tone="muted"] { color: var(--dsw-alias-label-tertiary); }
 .iui-text[data-tone="good"] { color: var(--dsw-alias-state-success-primary); }
 .iui-text[data-tone="bad"] { color: var(--dsw-alias-state-error-primary); }
@@ -32,6 +35,8 @@
 .iui-stat { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 120px; }
 .iui-stat > span { color: var(--dsw-alias-label-secondary); font-size: 13px; }
 .iui-stat > strong { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.iui-stat[data-tone="good"] > strong { color: var(--dsw-alias-state-success-primary); }
+.iui-stat[data-tone="bad"] > strong { color: var(--dsw-alias-state-error-primary); }
 
 .iui-field { display: flex; flex-direction: column; gap: 6px; }
 .iui-field > span { display: flex; justify-content: space-between; color: var(--dsw-alias-label-secondary); }
@@ -68,6 +73,39 @@
 .iui-tabs > button[aria-selected="true"] {
   border-bottom-color: var(--dsw-alias-state-business-primary);
   color: var(--dsw-alias-label-primary);
+}
+
+.iui-chart {
+  margin: 0;
+  --series: var(--dsw-alias-state-business-primary);
+}
+.iui-chart [data-series="1"] { --series: #f59e0b; }
+.iui-chart [data-series="2"] { --series: #10b981; }
+.iui-chart [data-series="3"] { --series: #ef4444; }
+.iui-chart [data-series="4"] { --series: #8b5cf6; }
+.iui-chart [data-series="5"] { --series: #06b6d4; }
+.iui-chart svg { display: block; width: 100%; height: auto; }
+.iui-chart text { fill: var(--dsw-alias-label-tertiary); font-size: 11px; }
+.iui-chart line { stroke: var(--dsw-alias-border-l2); }
+.iui-chart polyline { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; }
+.iui-chart rect,
+.iui-chart circle { fill: var(--series); }
+.iui-chart figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+}
+.iui-chart figcaption span::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 2px;
+  background: var(--series);
 }
 
 .iui-table { width: 100%; border-collapse: collapse; }

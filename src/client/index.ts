@@ -2,12 +2,13 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { TOOL } from '../shared.ts'
+import { en, zh } from './locale.ts'
 import { disposeSandboxes } from './sandbox.ts'
 import { ToolRow, TurnTail } from './views.tsx'
 import css from './widget.css'
 import { KEY, widgets } from './widgets.ts'
 
-export const inject = ['slots', 'uiConversation']
+export const inject = ['slots', 'uiConversation', 'locale']
 
 export function apply(ctx: Context): void {
   ctx.effect(() => {
@@ -19,9 +20,10 @@ export function apply(ctx: Context): void {
       disposeSandboxes()
     }
   })
+  ctx.effect(() => ctx.locale.register(KEY, { zh, en }))
   ctx.uiConversation.events.register(widgets)
   ctx.slots.inject('tool.call.toolview', () =>
-    ctx.slots.register({ name: 'tool.call.toolview', key: TOOL }, ToolRow))
+    ctx.slots.register({ name: 'tool.call.toolview', key: TOOL, locale: KEY }, ToolRow))
   ctx.slots.inject('conversation.chat.turnTail', () =>
-    ctx.slots.register({ name: 'conversation.chat.turnTail', id: KEY }, TurnTail))
+    ctx.slots.register({ name: 'conversation.chat.turnTail', id: KEY, locale: KEY }, TurnTail))
 }

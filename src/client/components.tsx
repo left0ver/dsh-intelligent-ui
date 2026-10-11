@@ -5,6 +5,7 @@
  */
 import { useState, type ReactNode } from 'react'
 import type { VOCABULARY } from '../dil/vocabulary.ts'
+import { Chart } from './chart.tsx'
 
 type Props = Record<string, unknown>
 interface ViewProps {
@@ -17,6 +18,7 @@ type View = (props: ViewProps) => ReactNode
 
 const str = (value: unknown) => typeof value === 'string' || typeof value === 'number' ? String(value) : ''
 const num = (value: unknown, fallback: number) => value == null || Number.isNaN(Number(value)) ? fallback : Number(value)
+const rows = (value: unknown) => (Array.isArray(value) ? value : []).map((row: unknown) => typeof row === 'object' && row !== null ? row as Props : {})
 
 /** Options and columns are written as `{label, value}` or as bare values. */
 const options = (value: unknown) => (Array.isArray(value) ? value : []).map((option: unknown) => {
@@ -95,7 +97,7 @@ const FLEX: Record<string, string> = { start: 'flex-start', center: 'center', en
 
 export const views: Record<keyof typeof VOCABULARY, View> = {
   box: ({ p, children }) => (
-    <div className="iui-box" style={{
+    <div className="iui-box" data-direction={p.direction === 'row' ? 'row' : 'column'} style={{
       flexDirection: p.direction === 'row' ? 'row' : 'column',
       gap: num(p.gap, 3) * 4,
       alignItems: FLEX[str(p.align)],
@@ -110,9 +112,9 @@ export const views: Record<keyof typeof VOCABULARY, View> = {
     </section>
   ),
   title: ({ p, children }) => <div className="iui-title" data-size={str(p.size)}>{children}</div>,
-  text: ({ p, children }) => <p className="iui-text" data-tone={str(p.tone)}>{children}</p>,
+  text: ({ p, children }) => <div className="iui-text" data-tone={str(p.tone)}>{children}</div>,
   stat: ({ p }) => (
-    <div className="iui-stat">
+    <div className="iui-stat" data-tone={str(p.tone)}>
       <span>{str(p.label)}</span>
       <strong>{str(p.value)}</strong>
       <span>{str(p.hint)}</span>
@@ -139,11 +141,20 @@ export const views: Record<keyof typeof VOCABULARY, View> = {
       <table className="iui-table">
         <thead><tr>{columns.map((column, index) => <th key={index}>{column.label}</th>)}</tr></thead>
         <tbody>
-          {(Array.isArray(p.rows) ? p.rows as Props[] : []).map((row, index) => (
-            <tr key={index}>{columns.map((column, at) => <td key={at}>{str(row?.[str(column.value)])}</td>)}</tr>
+          {rows(p.rows).map((row, index) => (
+            <tr key={index}>{columns.map((column, at) => <td key={at}>{str(row[str(column.value)])}</td>)}</tr>
           ))}
         </tbody>
       </table>
+    )
+  },
+  chart: ({ p }) => {
+    const points = rows(p.rows)
+    // What is not a finite number is drawn as zero: the plot's geometry divides by the range of these.
+    const finite = (value: unknown) => Number.isFinite(num(value, 0)) ? num(value, 0) : 0
+    return (
+      <Chart bars={p.type === 'bar'} labels={points.map(row => str(row[str(p.x)]))}
+        series={options(p.series).map(({ label, value }) => ({ label, values: points.map(row => finite(row[str(value)])) }))} />
     )
   },
 }

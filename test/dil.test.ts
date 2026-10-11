@@ -65,9 +65,53 @@ test('state survives the source growing', async () => {
   assert.match(JSON.stringify(await send({ program: compile(example).program })), /"value":"¥13,471"/)
 })
 
+test('every command is answered, whether or not it changes anything', async () => {
+  const reports: Report[] = []
+  const receive = createRuntime(report => reports.push(report))
+  const answers = async (command: Command) => {
+    receive(command)
+    await null
+    return reports.splice(0).length
+  }
+  assert.equal(await answers({ program: compile('<button onClick={() => { throw new Error("no") }}>go</button>').program }), 1)
+  assert.equal(await answers({ event: { path: [0], name: 'onClick', args: [] } }), 1)
+  assert.equal(await answers({ event: { path: [9], name: 'onClick', args: [] } }), 1)
+  assert.equal(await answers({ program: 'return (' }), 1)
+})
+
 test('a failing expression costs only its own node', async () => {
   const tree = await runtime()({ program: compile('{@body const broken = missing.value}<text>{missing.value}</text><text>{1 + 1}</text>').program })
   assert.deepEqual(tree, [{ t: 'text', p: {}, c: [] }, { t: 'text', p: {}, c: ['2'] }])
+})
+
+test('a program may give its own variables any name', async () => {
+  const tree = await runtime()({ program: compile('{@body const h = 1.7}{@body const $ = value => "$" + value}<text>{$(h)}</text>').program })
+  assert.deepEqual(tree, [{ t: 'text', p: {}, c: ['$1.7'] }])
+})
+
+test('every declaration at the top of a statement reaches the ones after it', async () => {
+  const source = [
+    '{@body const low = []; const high = [] // both; let neither',
+    'let total = 0}',
+    '{@body for (let n = 1; n <= 4; n++) { const half = n / 2; total += n; (half > 1 ? high : low).push(() => n) }}',
+    '<text>{total}: {low.map(read => read()).join("")} {high.map(read => read()).join("")}</text>',
+  ].join('\n')
+  assert.deepEqual(await runtime()({ program: compile(source).program }), [{ t: 'text', p: {}, c: ['10: 12 34'] }])
+})
+
+test('a statement may call a helper defined below it', async () => {
+  const source = '{@body const rows = [1, 2].map(n => money(n))}{@body const count = rows.length}{@body const money = n => "$" + n}<text>{count}: {rows.join(" ")}</text>'
+  assert.deepEqual(await runtime()({ program: compile(source).program }), [{ t: 'text', p: {}, c: ['2: $1 $2'] }])
+})
+
+test('a quoted attribute may embed expressions', async () => {
+  const tree = await runtime()({ program: compile('{@body const years = 20}<stat label="After {years} years, `{years * 2}` \\ ${years}" hint="{ no"/>').program })
+  assert.deepEqual(tree, [{ t: 'stat', p: { label: 'After 20 years, `40` \\ $20', hint: '{ no' }, c: [] }])
+})
+
+test('text inside elements reads HTML entities', async () => {
+  const tree = await runtime()({ program: compile('<stat label="A &amp; B"/><text>under &lt;18.5 &unknown;</text>').program })
+  assert.deepEqual(tree, [{ t: 'stat', p: { label: 'A & B' }, c: [] }, { t: 'text', p: {}, c: ['under <18.5 &unknown;'] }])
 })
 
 test('only the source\'s own prose is Markdown; computed text stays text', async () => {
