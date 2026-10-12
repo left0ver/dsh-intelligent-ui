@@ -11,3 +11,10 @@ export function axis(low: number, high: number): number[] {
   const first = Math.floor(low / step)
   return Array.from({ length: Math.max(1, Math.ceil(high / step) - first) + 1 }, (_, index) => (first + index) * step)
 }
+
+/** 各个数值占总和的比例，饼图按它分块。负数按 0 算；总和为 0 时全是 0。 */
+export function shares(values: number[]): number[] {
+  const sizes = values.map(value => Math.max(0, value))
+  const total = sizes.reduce((sum, size) => sum + size, 0)
+  return sizes.map(size => total ? size / total : 0)
+}

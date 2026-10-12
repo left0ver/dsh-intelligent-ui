@@ -18,7 +18,7 @@ English · [简体中文](README.zh.md)
 
 - **Appears as it is written**: each piece the model writes shows up at once.
 - **Runs locally**: dragging a slider, editing an input or switching a tab recalculates on the spot, with no further request to the model.
-- **Common controls**: sliders, inputs, selects, checkboxes, tabs, buttons, tables, line charts and bar charts.
+- **Common controls**: sliders, inputs, selects, checkboxes, tabs, buttons, tables, and line, bar, area and pie charts.
 - **Sandboxed**: the program the model writes runs in a sandbox, with no network and no access to the page's data.
 
 ## Quick start

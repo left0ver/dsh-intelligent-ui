@@ -11,6 +11,12 @@
 }
 .iui-pending { margin: 0; color: var(--dsw-alias-label-tertiary); }
 
+/* 语气色：`data-tone` 决定 `--tone` 是什么颜色，各个元素自己决定把它用在哪里。 */
+.iui [data-tone="muted"] { --tone: var(--dsw-alias-label-tertiary); }
+.iui [data-tone="good"] { --tone: var(--dsw-alias-state-success-primary); }
+.iui [data-tone="warn"] { --tone: var(--dsw-alias-state-warn-primary); }
+.iui [data-tone="bad"] { --tone: var(--dsw-alias-state-error-primary); }
+
 /* 布局：box 和 card */
 .iui-box { display: flex; min-width: 0; }
 /* 横向排列时，分组、输入栏、图表和表格平分宽度；按钮、勾选框和文字保持自身宽度。 */
@@ -33,16 +39,13 @@
 .iui-text { margin: 0; line-height: 1.6; }
 /* 嵌套在 text 里的 text 不另起一行。 */
 .iui-text .iui-text { display: inline; }
-.iui-text[data-tone="muted"] { color: var(--dsw-alias-label-tertiary); }
-.iui-text[data-tone="good"] { color: var(--dsw-alias-state-success-primary); }
-.iui-text[data-tone="bad"] { color: var(--dsw-alias-state-error-primary); }
+.iui-text[data-tone] { color: var(--tone); }
 
 /* 关键数字：stat */
 .iui-stat { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 120px; }
 .iui-stat > span { color: var(--dsw-alias-label-secondary); font-size: 13px; }
 .iui-stat > strong { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.iui-stat[data-tone="good"] > strong { color: var(--dsw-alias-state-success-primary); }
-.iui-stat[data-tone="bad"] > strong { color: var(--dsw-alias-state-error-primary); }
+.iui-stat[data-tone] > strong { color: var(--tone); }
 
 /* 输入控件：slider、input、select、checkbox 和 button */
 .iui-field { display: flex; flex-direction: column; gap: 6px; }
@@ -58,6 +61,7 @@
   color: inherit;
   font: inherit;
 }
+textarea.iui-input { resize: vertical; }
 .iui-button { align-self: flex-start; cursor: pointer; }
 .iui-button:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .iui-button[data-variant="primary"] {
@@ -94,12 +98,17 @@
 .iui-chart [data-series="3"] { --series: #ef4444; }
 .iui-chart [data-series="4"] { --series: #8b5cf6; }
 .iui-chart [data-series="5"] { --series: #06b6d4; }
+.iui-chart [data-series="6"] { --series: #ec4899; }
+.iui-chart [data-series="7"] { --series: #84cc16; }
 .iui-chart svg { display: block; width: 100%; height: auto; }
 .iui-chart text { fill: var(--dsw-alias-label-tertiary); font-size: 11px; }
 .iui-chart line { stroke: var(--dsw-alias-border-l2); }
 .iui-chart polyline { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; }
 .iui-chart rect,
-.iui-chart circle { fill: var(--series); }
+.iui-chart circle,
+.iui-chart path { fill: var(--series); }
+/* 面积图里折线下方的那一片 */
+.iui-chart polygon { fill: var(--series); opacity: 0.15; }
 /* 图例，每一项前面有一个色块 */
 .iui-chart figcaption {
   display: flex;
@@ -124,3 +133,10 @@
 .iui-table th,
 .iui-table td { padding: 8px 12px; border-bottom: 1px solid var(--dsw-alias-border-l2); text-align: left; }
 .iui-table th { color: var(--dsw-alias-label-secondary); font-weight: 500; }
+.iui-table :is(th, td)[data-align="center"] { text-align: center; }
+.iui-table :is(th, td)[data-align="right"] { text-align: right; font-variant-numeric: tabular-nums; }
+.iui-table td[data-tone] { color: var(--tone); }
+/* 可以排序的表格：表头能点，当前排序的那一列带箭头。 */
+.iui-table[data-sortable] th { cursor: pointer; user-select: none; }
+.iui-table th[aria-sort="ascending"]::after { content: " ▲"; }
+.iui-table th[aria-sort="descending"]::after { content: " ▼"; }

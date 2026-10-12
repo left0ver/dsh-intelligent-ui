@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { axis } from '../src/client/axis.ts'
+import { axis, shares } from '../src/client/axis.ts'
 
 test('marks are round and cover the range', () => {
   assert.deepEqual(axis(0, 100), [0, 50, 100])
@@ -13,4 +13,10 @@ test('marks are round and cover the range', () => {
 test('a range of one value still has two marks', () => {
   assert.deepEqual(axis(5, 5), [5, 6])
   assert.deepEqual(axis(0, 0), [0, 1])
+})
+
+test('pie slices are each value\'s share of the total', () => {
+  assert.deepEqual(shares([1, 1, 2]), [0.25, 0.25, 0.5])
+  assert.deepEqual(shares([3, -5, 1]), [0.75, 0, 0.25])
+  assert.deepEqual(shares([0, 0]), [0, 0])
 })

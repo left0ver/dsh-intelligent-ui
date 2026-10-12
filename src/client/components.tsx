@@ -2,7 +2,7 @@
  * 每个元素在页面上的渲染。属性是模型写的代码算出来的，什么值都有可能，
  * 所以每个组件读属性时都先转成需要的类型，不把任何属性原样传给 DOM。
  */
-import { useState, type ReactNode } from 'react'
+import { useState, type ChangeEvent, type ReactNode } from 'react'
 import type { VOCABULARY } from '../dil/vocabulary.ts'
 import { Chart } from './chart.tsx'
 
@@ -24,11 +24,15 @@ const num = (value: unknown, fallback: number) => value == null || Number.isNaN(
 /** 转成对象数组，用作表格和图表的行。 */
 const rows = (value: unknown) => (Array.isArray(value) ? value : []).map((row: unknown) => typeof row === 'object' && row !== null ? row as Props : {})
 
-/** 转成选项列表。选项和表格的列可以写成 `{label, value}`，也可以直接写值。 */
-const options = (value: unknown) => (Array.isArray(value) ? value : []).map((option: unknown) => {
-  const { label, value } = typeof option === 'object' && option !== null ? option as Props : { value: option } as Props
-  return { label: str(label ?? value), value }
+/** 转成选项列表。选项和表格的列可以写成 `{label, value}`，也可以直接写值；写了别的字段也保留。 */
+const options = (value: unknown) => (Array.isArray(value) ? value : []).map((option: unknown): Props & { label: string } => {
+  const fields: Props = typeof option === 'object' && option !== null ? option as Props : { value: option }
+  return { ...fields, label: str(fields.label ?? fields.value), value: fields.value }
 })
+/** 把值读成数字，排序时用：`¥4,490`、`+5%` 这样的文字只看其中的数；读不出来是 NaN。 */
+const amount = (value: unknown) => typeof value === 'number' ? value : parseFloat(str(value).replace(/[^\d.+-]/g, ''))
+/** 排序时比较两个值：先比读出的数，读不出或一样大时比文字。 */
+const order = (a: unknown, b: unknown) => amount(a) - amount(b) || str(a).localeCompare(str(b), undefined, { numeric: true })
 
 /** 让控件立刻显示用户的输入；程序算出的值稍后才到，到了以程序的为准。 */
 function useEcho<T>(value: T, change: (next: T) => void): [T, (next: T) => void] {
@@ -66,12 +70,18 @@ function Slider({ p, on }: ViewProps) {
 }
 
 function Input({ p, on }: ViewProps) {
-  const numeric = p.type === 'number'
-  const [value, change] = useEcho(str(p.value), next => on('onChange', numeric ? Number(next) : next))
+  const type = str(p.type)
+  const [value, change] = useEcho(str(p.value), next => on('onChange', type === 'number' ? Number(next) : next))
+  /** 单行和多行输入框共用的属性。 */
+  const shared = {
+    className: 'iui-input',
+    placeholder: str(p.placeholder),
+    value,
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => change(event.target.value),
+  }
   return (
     <Field label={p.label}>
-      <input className="iui-input" type={numeric ? 'number' : 'text'} placeholder={str(p.placeholder)} value={value}
-        onChange={event => change(event.target.value)} />
+      {type === 'multiline' ? <textarea rows={4} {...shared} /> : <input type={type === 'number' || type === 'date' ? type : 'text'} {...shared} />}
     </Field>
   )
 }
@@ -97,6 +107,40 @@ function Checkbox({ p, on }: ViewProps) {
       <input type="checkbox" checked={checked} onChange={event => change(event.target.checked)} />
       {str(p.label)}
     </label>
+  )
+}
+
+function Table({ p }: ViewProps) {
+  const columns = options(p.columns)
+  /** 用户点表头选的排序：按第几列，是否从大到小。没点过就按程序给的顺序。 */
+  const [sort, setSort] = useState<{ at: number; down: boolean }>()
+  /** 点一次从小到大，再点从大到小，第三次恢复原来的顺序。 */
+  const toggle = (at: number) => setSort(sort?.at !== at ? { at, down: false } : sort.down ? undefined : { at, down: true })
+  const body = rows(p.rows)
+  if (sort && columns[sort.at]) {
+    const field = str(columns[sort.at].value)
+    body.sort((a, b) => order(a[field], b[field]) * (sort.down ? -1 : 1))
+  }
+  return (
+    <table className="iui-table" data-sortable={p.sortable ? '' : undefined}>
+      <thead>
+        <tr>
+          {columns.map((column, at) => (
+            <th key={at} data-align={str(column.align)} aria-sort={sort?.at !== at ? undefined : sort.down ? 'descending' : 'ascending'}
+              onClick={p.sortable ? () => toggle(at) : undefined}>{column.label}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {body.map((row, index) => (
+          <tr key={index}>
+            {columns.map((column, at) => (
+              <td key={at} data-align={str(column.align)} data-tone={str(row[str(column.tone)])}>{str(row[str(column.value)])}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
 
@@ -145,25 +189,13 @@ export const views: Record<keyof typeof VOCABULARY, View> = {
   button: ({ p, on, children }) => (
     <button className="iui-button" type="button" data-variant={str(p.variant)} onClick={() => on('onClick')}>{children}</button>
   ),
-  table: ({ p }) => {
-    const columns = options(p.columns)
-    return (
-      <table className="iui-table">
-        <thead><tr>{columns.map((column, index) => <th key={index}>{column.label}</th>)}</tr></thead>
-        <tbody>
-          {rows(p.rows).map((row, index) => (
-            <tr key={index}>{columns.map((column, at) => <td key={at}>{str(row[str(column.value)])}</td>)}</tr>
-          ))}
-        </tbody>
-      </table>
-    )
-  },
+  table: Table,
   chart: ({ p }) => {
     const points = rows(p.rows)
     // 不是有限数值的一律按 0 画：算坐标时要除以这些数值的范围。
     const finite = (value: unknown) => Number.isFinite(num(value, 0)) ? num(value, 0) : 0
     return (
-      <Chart bars={p.type === 'bar'} labels={points.map(row => str(row[str(p.x)]))}
+      <Chart type={str(p.type)} labels={points.map(row => str(row[str(p.x)]))}
         series={options(p.series).map(({ label, value }) => ({ label, values: points.map(row => finite(row[str(value)])) }))} />
     )
   },
