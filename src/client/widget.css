@@ -11,7 +11,11 @@
 }
 .iui-pending { margin: 0; color: var(--dsw-alias-label-tertiary); }
 
-/* 语气色：`data-tone` 决定 `--tone` 是什么颜色，各个元素自己决定把它用在哪里。 */
+/*
+ * 语气色：`data-tone` 决定 `--tone` 是什么颜色，各个元素自己决定把它用在哪里。
+ * 没写语气的元素把 `--tone` 清掉，免得沿用外层元素（比如 callout）的颜色。
+ */
+.iui [data-tone] { --tone: initial; }
 .iui [data-tone="muted"] { --tone: var(--dsw-alias-label-tertiary); }
 .iui [data-tone="good"] { --tone: var(--dsw-alias-state-success-primary); }
 .iui [data-tone="warn"] { --tone: var(--dsw-alias-state-warn-primary); }
@@ -19,8 +23,8 @@
 
 /* 布局：box 和 card */
 .iui-box { display: flex; min-width: 0; }
-/* 横向排列时，分组、输入栏、图表和表格平分宽度；按钮、勾选框和文字保持自身宽度。 */
-.iui-box[data-direction="row"] > :is(.iui-box, .iui-card, .iui-field, .iui-chart, .iui-table) { flex: 1 1 200px; min-width: 0; }
+/* 横向排列时，分组、输入栏、进度条、图表和表格平分宽度；按钮、勾选框和文字保持自身宽度。 */
+.iui-box[data-direction="row"] > :is(.iui-box, .iui-card, .iui-callout, .iui-details, .iui-field, .iui-progress, .iui-chart, .iui-table) { flex: 1 1 200px; min-width: 0; }
 .iui-card {
   display: flex;
   flex-direction: column;
@@ -30,6 +34,24 @@
   border-radius: var(--dsw-radius-lg);
 }
 .iui-card > header { font-weight: 600; }
+
+/* 提示框：callout。左边一道色条，底色是同一种颜色的淡色。 */
+.iui-callout {
+  --accent: var(--tone, var(--dsw-alias-state-business-primary));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--dsw-radius-md);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.iui-callout > header { color: var(--accent); font-weight: 600; }
+
+/* 可展开的一节：details */
+.iui-details { border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-md); }
+.iui-details > summary { padding: 8px 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; }
+.iui-details > div { display: flex; flex-direction: column; gap: 12px; padding: 4px 12px 12px; }
 
 /* 文字：title 和 text */
 .iui-title { font-size: 16px; font-weight: 600; }
@@ -41,11 +63,34 @@
 .iui-text .iui-text { display: inline; }
 .iui-text[data-tone] { color: var(--tone); }
 
+/* 标签：badge。底色是文字颜色的淡色。 */
+.iui-badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: var(--tone, var(--dsw-alias-label-secondary));
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
 /* 关键数字：stat */
 .iui-stat { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 120px; }
 .iui-stat > span { color: var(--dsw-alias-label-secondary); font-size: 13px; }
 .iui-stat > strong { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .iui-stat[data-tone] > strong { color: var(--tone); }
+
+/* 进度条：progress */
+.iui-progress { display: flex; flex-direction: column; gap: 6px; }
+.iui-progress > span { color: var(--dsw-alias-label-secondary); }
+.iui-progress > div { height: 8px; overflow: hidden; border-radius: 4px; background: var(--dsw-alias-border-l2); }
+.iui-progress > div > div { height: 100%; background: var(--tone, var(--dsw-alias-state-business-primary)); transition: width 0.2s; }
+
+/* 色块：swatch */
+.iui-swatch { display: flex; flex: 1 1 64px; flex-direction: column; gap: 4px; min-width: 64px; color: var(--dsw-alias-label-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.iui-swatch > span { height: 48px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-md); }
 
 /* 输入控件：slider、input、select、checkbox 和 button */
 .iui-field { display: flex; flex-direction: column; gap: 6px; }

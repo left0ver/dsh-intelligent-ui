@@ -167,11 +167,39 @@ export const views: Record<keyof typeof VOCABULARY, View> = {
   ),
   title: ({ p, children }) => <div className="iui-title" data-size={str(p.size)}>{children}</div>,
   text: ({ p, children }) => <div className="iui-text" data-tone={str(p.tone)}>{children}</div>,
+  badge: ({ p, children }) => <span className="iui-badge" data-tone={str(p.tone)}>{children}</span>,
+  callout: ({ p, children }) => (
+    <aside className="iui-callout" data-tone={str(p.tone)}>
+      {p.title ? <header>{str(p.title)}</header> : null}
+      {children}
+    </aside>
+  ),
+  // 展开还是收起由浏览器自己记着，不经过程序。
+  details: ({ p, children }) => (
+    <details className="iui-details">
+      <summary>{str(p.title)}</summary>
+      <div>{children}</div>
+    </details>
+  ),
   stat: ({ p }) => (
     <div className="iui-stat" data-tone={str(p.tone)}>
       <span>{str(p.label)}</span>
       <strong>{str(p.value)}</strong>
       <span>{str(p.hint)}</span>
+    </div>
+  ),
+  progress: ({ p }) => (
+    <div className="iui-progress" data-tone={str(p.tone)}>
+      {p.label ? <span>{str(p.label)}</span> : null}
+      {/* 进度条填满的比例限制在 0 到 1 之间；算不出来（0 除以 0）时为 0。 */}
+      <div role="progressbar"><div style={{ width: `${(Math.min(1, Math.max(0, num(p.value, 0) / num(p.max, 100))) || 0) * 100}%` }} /></div>
+    </div>
+  ),
+  swatch: ({ p }) => (
+    <div className="iui-swatch">
+      {/* 只设 `backgroundColor`：它只接受颜色，写成会发请求的 `url()` 之类浏览器不认。 */}
+      <span style={{ backgroundColor: str(p.color) }} />
+      {str(p.label)}
     </div>
   ),
   slider: Slider,

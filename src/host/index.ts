@@ -29,7 +29,7 @@ Rules:
 
 Not supported. These show up as literal text or do nothing:
 - Markdown, HTML or image syntax inside an element or in a computed value. Markdown works only in prose written outside elements, and that prose is static: put anything computed inside an element.
-- Images, icons, colors, SVG and custom styling. The only emphasis is \`tone\` and <title>; emoji are fine.
+- Images, icons, SVG and custom styling. Colour comes only from \`tone\` and <swatch>; emoji are fine.
 - document, window, storage, network, imports and timers. The code is plain JavaScript in a sandbox; standard built-ins such as Math, Date, Intl and JSON work.
 
 Elements:
