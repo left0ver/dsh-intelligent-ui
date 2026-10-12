@@ -62,6 +62,10 @@ dsh plugin --profile web remove @left0ver/dsh-intelligent-ui
 - The interface's state is not saved: reloading the page resets it.
 - The model cannot see what you do in the interface, so a follow-up question does not know where you left the sliders.
 
+## Acknowledgements
+
+Thanks to [Disdjj/intelligent-ui-demo](https://github.com/Disdjj/intelligent-ui-demo) for its analysis of how OpenAI implements Intelligent UI, which this plugin builds on.
+
 ## License
 
 [MIT](LICENSE)

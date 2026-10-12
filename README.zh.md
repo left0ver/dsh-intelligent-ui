@@ -62,6 +62,10 @@ dsh plugin --profile web remove @left0ver/dsh-intelligent-ui
 - 界面状态不保存，刷新页面后回到初始值。
 - 模型看不到你在界面上的操作，追问时它不知道滑块被拖到了哪里。
 
+## 致谢
+
+感谢 [Disdjj/intelligent-ui-demo](https://github.com/Disdjj/intelligent-ui-demo) 提供的 OpenAI 实现 Intelligent UI 的思路，本插件基于这些思路实现。
+
 ## 许可证
 
 [MIT](LICENSE)
