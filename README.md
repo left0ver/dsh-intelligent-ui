@@ -47,7 +47,7 @@ dsh web
 Ask the way you normally would; there is no need to mention the plugin. For example:
 
 ```
-Use charts to compare investing a lump sum with investing monthly over 20 years, at different annual returns
+I take home $6,000 a month and spend $1,800 on rent, $700 on food, $300 on transport and $500 on fun. I want to save $50,000 for a down payment. Show me where my money goes and how long it will take.
 ```
 
 ## Update and uninstall
