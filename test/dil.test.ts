@@ -147,6 +147,10 @@ test('text inside elements reads HTML entities', async () => {
   assert.deepEqual(tree, [{ t: 'stat', p: { label: 'A & B' }, c: [] }, { t: 'text', p: {}, c: ['under <18.5 &unknown;'] }])
 })
 
+test('dollar amounts in prose are not read as math', () => {
+  assert.deepEqual(compile('From $6,000 to $50,000, where $x$ is math.\n<text>$5</text>').prose, ['From \\$6,000 to \\$50,000, where $x$ is math.\n'])
+})
+
 test('only the source\'s own prose is Markdown; computed text stays text', async () => {
   const { program, prose } = compile('Read **this**.\n{"![](http://example.com/" + 1 + ")"}\n<text>inside</text>')
   assert.deepEqual(prose, ['Read **this**.\n'])

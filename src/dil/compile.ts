@@ -82,7 +82,8 @@ export function compile(source: string): Compiled {
       case 'text':
         if (!top) return literal(node.text)
         // 顶层的文本是正文：存进 `prose`，程序里只留一个带下标的占位标签。
-        return node.text.trim() && `${TAG}("prose", {index: ${prose.push(node.text) - 1}})`
+        // 金额前的 `$` 加上反斜杠，否则 Markdown 会把两个金额之间的文字当成数学公式。
+        return node.text.trim() && `${TAG}("prose", {index: ${prose.push(node.text.replace(/\$(?=\d)/g, '\\$')) - 1}})`
       case 'code': return guard(node.code)
       case 'element': return `${TAG}(${text(node.tag)}, {${node.props.map(prop).join(', ')}}, ${list(node.children, false)})`
       case 'if': return `(${guard(node.test)} ? ${list(node.then, top)} : ${list(node.otherwise, top)})`
