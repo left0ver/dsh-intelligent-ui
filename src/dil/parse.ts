@@ -38,6 +38,8 @@ const TAG_END = /\s*(\/?)>/y
 const TEXT = /(?:[^<{]|<(?![A-Za-z/]|$))+/y
 /** `{…}` 里的指令及其后面的内容。 */
 const DIRECTIVE = /^\s*(@body|#if|#each|:else|\/if|\/each)\b\s*([\s\S]*)$/
+/** `{:else if 条件}` 里 `:else` 后面的部分，取出其中的条件。 */
+const ELSE_IF = /^if\b\s*([\s\S]*)$/
 /** `{#each 列表 as 变量}` 里的列表和变量。 */
 const EACH = /^([\s\S]+?)\s+as\s+([\s\S]+)$/
 /** 带引号的属性值里嵌入的 `{表达式}`。 */
@@ -54,6 +56,8 @@ export function parse(source: string): Program {
   let at = 0
   /** 刚读完的那个列表是被什么结束的（按原文）；读到输入末尾时为空。 */
   let ended = ''
+  /** 刚读完的那个列表如果是被 `{:else if 条件}` 结束的，这里是那个条件；否则为空。 */
+  let elseIf = ''
 
   /** 问题描述里指代源码中某一段的写法：原文加行号。 */
   const mark = (piece: string, index: number) => `${piece} (line ${source.slice(0, index).split('\n').length})`
@@ -104,6 +108,16 @@ export function parse(source: string): Program {
   }
 
   /**
+   * 解析一个 `{#if}` 块，此时它的条件已经读过；`block` 是问题描述里对它的称呼。
+   * `{:else if 条件}` 相当于在 `{:else}` 里再套一个 `{#if}`，和外层共用同一个 `{/if}`。
+   */
+  function conditional(test: string, block: string): Node {
+    const then = list(block, '{:else}', '{/if}')
+    const otherwise = ended !== '{:else}' ? [] : elseIf ? [conditional(elseIf, block)] : list(block, '{/if}')
+    return { kind: 'if', test, then, otherwise }
+  }
+
+  /**
    * 读出 `opener` 里面的所有节点，直到遇到闭合标记。它应该由 `closers` 之一闭合，
    * 但任何闭合标记都会结束这个列表，对不上的记为问题。
    */
@@ -125,14 +139,14 @@ export function parse(source: string): Program {
         if (code === undefined) break
         const [, directive, rest = ''] = DIRECTIVE.exec(code) ?? []
         if (directive === '@body') statements.push(rest)
-        else if (directive === '#if') {
-          const block = mark('{#if}', from)
-          // 第一段如果是被 `{:else}` 结束的，后面还有第二段。
-          nodes.push({ kind: 'if', test: rest, then: list(block, '{:else}', '{/if}'), otherwise: ended === '{:else}' ? list(block, '{/if}') : [] })
-        } else if (directive === '#each') {
+        else if (directive === '#if') nodes.push(conditional(rest, mark('{#if}', from)))
+        else if (directive === '#each') {
           const [, items = rest, item = 'item'] = EACH.exec(rest) ?? []
           nodes.push({ kind: 'each', list: items, item, children: list(mark('{#each}', from), '{/each}') })
-        } else if (directive) closer = `{${directive}}`
+        } else if (directive) {
+          closer = `{${directive}}`
+          elseIf = ELSE_IF.exec(rest)?.[1] ?? ''
+        }
         else nodes.push({ kind: 'code', code })
       } else if ((match = take(TEXT))) nodes.push({ kind: 'text', text: match[0] })
       else giveUp(mark('<', at))

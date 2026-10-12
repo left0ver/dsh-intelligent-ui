@@ -18,7 +18,7 @@ const DESCRIPTION = `Answer with an interactive interface instead of prose. Use 
 {@body const [count, setCount] = DIL.useState(0)}   state; one declaration per {@body}
 {@body const double = count * 2}                    derived value: any JavaScript, recomputed on every change
 <tag name="text" name={expression}>children</tag>   element; {expression} also interpolates inside children
-{#if condition}…{:else}…{/if}
+{#if condition}…{:else if other}…{:else}…{/if}
 {#each rows as row, index}…{/each}
 
 Rules:
@@ -26,7 +26,6 @@ Rules:
 - Each {@body} holds one complete statement.
 - Close every element; self-close those without children.
 - Do not write comments.
-- There is no {:else if}: nest another {#if} inside {:else}.
 
 Not supported. These show up as literal text or do nothing:
 - Markdown, HTML or image syntax inside an element or in a computed value. Markdown works only in prose written outside elements, and that prose is static: put anything computed inside an element.

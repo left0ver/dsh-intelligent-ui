@@ -126,6 +126,17 @@ test('a regular expression may hold quotes and braces', async () => {
   assert.deepEqual(await runtime()({ program: compile(source).program }), [{ t: 'text', p: {}, c: ['it\'s { ok 2'] }])
 })
 
+test('an {:else if} chain shows the first branch that holds', async () => {
+  const source = [
+    '{#each [3, 2, 1, 0] as n}',
+    '<text>{#if n > 2}high{:else if n > 1}mid{:else if n > 0}low{:else}none{/if}</text>',
+    '<text>{#if n > 2}high{:else if n > 1}mid{/if}</text>',
+    '{/each}',
+  ].join('')
+  const tree = await runtime()({ program: compile(source).program })
+  assert.deepEqual(tree.map(item => typeof item === 'string' ? item : item.c.join('')), ['high', 'high', 'mid', 'mid', 'low', '', 'none', ''])
+})
+
 test('a quoted attribute may embed expressions', async () => {
   const tree = await runtime()({ program: compile('{@body const years = 20}<stat label="After {years} years, `{years * 2}` \\ ${years}" hint="{ no"/>').program })
   assert.deepEqual(tree, [{ t: 'stat', p: { label: 'After 20 years, `40` \\ $20', hint: '{ no' }, c: [] }])

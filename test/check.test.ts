@@ -19,6 +19,16 @@ test('what is left open is named with its line', () => {
   assert.deepEqual(check('<text>hi</text>\n{/each}'), ['{/each} (line 2) closes nothing'])
 })
 
+test('an {:else if} chain shares one {/if}', () => {
+  assert.deepEqual(check('{#if a}\n<text>A</text>\n{:else if b}\n<text>B</text>\n{:else}\n<text>C</text>\n{/if}'), [])
+  assert.deepEqual(check('{#if a}\n<text>A</text>\n{:else if b}\n<text>B</text>'), ['{#if} (line 1) is never closed'])
+  assert.deepEqual(check('{#if a}\n<text>A</text>\n{:else}\n<text>B</text>\n{:else if c}\n<text>C</text>\n{/if}'), [
+    '{:else} (line 5) does not close {#if} (line 1)',
+    '{/if} (line 7) closes nothing',
+  ])
+  assert.deepEqual(check('{#if a}\n<text>A</text>\n{:else if b +}\n<text>B</text>\n{/if}'), ['{b +}: Unexpected token \')\''])
+})
+
 test('an unfinished tail is a problem once the source is finished', () => {
   assert.deepEqual(check(example.slice(0, example.indexOf('max={500}'))), [
     '<slider> (line 14) is unfinished',
