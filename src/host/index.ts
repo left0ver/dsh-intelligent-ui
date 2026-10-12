@@ -22,9 +22,16 @@ const DESCRIPTION = `Answer with an interactive interface instead of prose. Use 
 {#each rows as row, index}…{/each}
 
 Rules:
-- Only the elements below exist. No HTML, CSS, imports, timers, or network.
+- Only the elements below exist, and only with the attributes listed. No HTML tags, CSS, or style and class attributes.
 - Each {@body} holds one complete statement.
 - Close every element; self-close those without children.
+- Do not write comments.
+- There is no {:else if}: nest another {#if} inside {:else}.
+
+Not supported. These show up as literal text or do nothing:
+- Markdown, HTML or image syntax inside an element or in a computed value. Markdown works only in prose written outside elements, and that prose is static: put anything computed inside an element.
+- Images, icons, colors, SVG and custom styling. The only emphasis is \`tone\` and <title>; emoji are fine.
+- document, window, storage, network, imports and timers. The code is plain JavaScript in a sandbox; standard built-ins such as Math, Date, Intl and JSON work.
 
 Elements:
 ${Object.entries(VOCABULARY).map(([tag, props]) => `<${tag}> ${props}`).join('\n')}

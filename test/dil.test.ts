@@ -108,6 +108,24 @@ test('a statement may call a helper defined below it', async () => {
   assert.deepEqual(await runtime()({ program: compile(source).program }), [{ t: 'text', p: {}, c: ['2: $1 $2'] }])
 })
 
+test('a comment may hold quotes and braces', async () => {
+  const source = [
+    '{@body // the city\'s "local" time}',
+    '{@body const double = n => {',
+    '  // it\'s {n} twice',
+    '  return n * 2 /* isn\'t { odd */',
+    '}}',
+    '{@body const base = 4 // don\'t change}',
+    '<text>{double(base) // that\'s 8}</text>',
+  ].join('\n')
+  assert.deepEqual(await runtime()({ program: compile(source).program }), [{ t: 'text', p: {}, c: ['8'] }])
+})
+
+test('a regular expression may hold quotes and braces', async () => {
+  const source = '{@body const words = text => text.match(/[a-z\']+|[{"]/g)}{@body const half = n => n / 2}<text>{words("it\'s {ok").join(" ")} {half(8) / 2}</text>'
+  assert.deepEqual(await runtime()({ program: compile(source).program }), [{ t: 'text', p: {}, c: ['it\'s { ok 2'] }])
+})
+
 test('a quoted attribute may embed expressions', async () => {
   const tree = await runtime()({ program: compile('{@body const years = 20}<stat label="After {years} years, `{years * 2}` \\ ${years}" hint="{ no"/>').program })
   assert.deepEqual(tree, [{ t: 'stat', p: { label: 'After 20 years, `40` \\ $20', hint: '{ no' }, c: [] }])

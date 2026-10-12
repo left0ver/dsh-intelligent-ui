@@ -26,6 +26,16 @@ test('an unfinished tail is a problem once the source is finished', () => {
   ])
 })
 
+test('a brace left open is reported as missing its closing brace', () => {
+  assert.deepEqual(check('{@body const a = 1}\n{@body const b = 2\n{@body const c = 3}'), ['{ (line 2) has no closing }'])
+})
+
+test('an attribute that is neither text nor an expression is pointed at', () => {
+  assert.deepEqual(check('<card title="At " + hour + ":00">\n<text>hi</text>\n</card>'), [
+    '<card> (line 1) has a malformed attribute near `+ hour + ":00">`: write name="text" or name={expression}',
+  ])
+})
+
 test('code that does not parse is quoted, and never run', () => {
   assert.deepEqual(check('{@body globalThis.ran = true}\n{@body const a = }\n<stat value={1 +* 2}/>'), [
     '{@body const a = }: Unexpected token \'}\'',

@@ -64,16 +64,16 @@ export function parse(source: string): Program {
     if (match) at = pattern.lastIndex
     return match
   }
-  /** 放弃没写完的尾巴，并记下是哪一段没写完。 */
-  const giveUp = (piece: string): undefined => {
-    problems.push(`${piece} is unfinished`)
+  /** 放弃没写完的尾巴，并记下是哪一段没写完、差在哪里。 */
+  const giveUp = (piece: string, problem = 'is unfinished'): undefined => {
+    problems.push(`${piece} ${problem}`)
     at = source.length
   }
 
   /** 读出当前位置那对 `{…}` 里面的内容。 */
   function braces(): string | undefined {
     const end = closing(source, at)
-    if (end < 0) return giveUp(mark('{', at))
+    if (end < 0) return giveUp(mark('{', at), 'has no closing }')
     const code = source.slice(at + 1, end)
     at = end + 1
     return code
@@ -95,7 +95,11 @@ export function parse(source: string): Program {
       }
     }
     const end = take(TAG_END)
-    if (!end) return giveUp(opener)
+    if (!end) {
+      /** 标签里读不下去的那一段；为空说明标签只是没写完。 */
+      const rest = source.slice(at).trim().split('\n')[0].slice(0, 30)
+      return giveUp(opener, rest ? `has a malformed attribute near \`${rest}\`: write name="text" or name={expression}` : undefined)
+    }
     return { kind: 'element', tag, props, children: end[1] ? [] : list(opener, `</${tag}>`) }
   }
 
@@ -148,13 +152,29 @@ export function parse(source: string): Program {
   return { statements, nodes, problems }
 }
 
-/** 与 `open` 处的 `{` 配对的 `}` 的位置；代码还没写完时返回 -1。字符串里的花括号不算。 */
+/**
+ * 代码里要认的记号：花括号、行注释的开头、块注释、字符串、正则。
+ * 最后一项是正则，连同它前面的那个符号：`/` 跟在这些符号后面时是正则的开头，否则是除号。
+ * 整个认出来之后，正则里的引号和花括号就不会被当成字符串和代码块。
+ */
+const CODE = /[{}]|\/\/|\/\*[\s\S]*?(?:\*\/|$)|"(?:[^"\\]|\\[^])*"?|'(?:[^'\\]|\\[^])*'?|`(?:[^`\\]|\\[^])*`?|(?:[(,=:[!&|?;>]|\breturn)\s*\/(?![/*])(?:[^/\\\n[]|\\.|\[(?:[^\]\\\n]|\\.)*\])+\//g
+/** 行注释里要认的记号：花括号和行尾。引号在这里只是普通字符，不是字符串的开头。 */
+const COMMENT = /[{}\n]/g
+
+/**
+ * 与 `open` 处的 `{` 配对的 `}` 的位置；代码还没写完时返回 -1。字符串、块注释和正则里的花括号不算。
+ * 行注释里的花括号照常计数：`{@body … // 说明}` 就是靠注释后面那个 `}` 闭合的。
+ */
 function closing(source: string, open: number): number {
-  const token = /[{}]|"(?:[^"\\]|\\[^])*"?|'(?:[^'\\]|\\[^])*'?|`(?:[^`\\]|\\[^])*`?/g
-  token.lastIndex = open
-  for (let depth = 0, match; (match = token.exec(source));) {
-    if (match[0] === '{') depth++
-    else if (match[0] === '}' && --depth === 0) return match.index
+  /** 当前要认的记号：进了行注释就换成 `COMMENT`，到行尾再换回来。 */
+  let tokens = CODE
+  for (let depth = 0, at = open; ;) {
+    tokens.lastIndex = at
+    const [token] = tokens.exec(source) ?? []
+    if (token === undefined) return -1
+    at = tokens.lastIndex
+    if (token === '{') depth++
+    else if (token !== '}') tokens = token === '//' ? COMMENT : CODE
+    else if (--depth === 0) return at - 1
   }
-  return -1
 }
